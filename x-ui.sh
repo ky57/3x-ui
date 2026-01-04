@@ -86,7 +86,7 @@ confirm_restart() {
 }
 
 before_show_menu() {
-    echo && echo -n -e "${yellow}按回车键返回主菜单: ${plain}" && read -r temp
+    echo && echo -n -e "${yellow}Press enter to return to the main menu: ${plain}" && read -r temp
     show_menu
 }
 
@@ -118,8 +118,8 @@ update() {
 }
 
 update_menu() {
-    echo -e "${yellow}更新菜单${plain}"
-    confirm "此功能将菜单更新到最新更改。" "y"
+    echo -e "${yellow}Updating Menu${plain}"
+    confirm "This function will update the menu to the latest changes." "y"
     if [[ $? != 0 ]]; then
         LOGE "Cancelled"
         if [[ $# == 0 ]]; then
@@ -136,7 +136,7 @@ update_menu() {
         echo -e "${green}Update successful. The panel has automatically restarted.${plain}"
         exit 0
     else
-        echo -e "${red}更新菜单失败。${plain}"
+        echo -e "${red}Failed to update the menu.${plain}"
         return 1
     fi
 }
@@ -486,9 +486,9 @@ disable() {
 
 show_log() {
     if [[ $release == "alpine" ]]; then
-        echo -e "${green}\t1.${plain} 调试日志"
-        echo -e "${green}\t0.${plain} 返回主菜单"
-        read -rp "选择一个选项: " choice
+        echo -e "${green}\t1.${plain} Debug Log"
+        echo -e "${green}\t0.${plain} Back to Main Menu"
+        read -rp "Choose an option: " choice
 
         case "$choice" in
         0)
@@ -501,15 +501,15 @@ show_log() {
             fi
             ;;
         *)
-            echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
             show_log
             ;;
         esac
     else
-        echo -e "${green}\t1.${plain} 调试日志"
-        echo -e "${green}\t2.${plain} 清除所有日志"
-        echo -e "${green}\t0.${plain} 返回主菜单"
-        read -rp "选择一个选项: " choice
+        echo -e "${green}\t1.${plain} Debug Log"
+        echo -e "${green}\t2.${plain} Clear All logs"
+        echo -e "${green}\t0.${plain} Back to Main Menu"
+        read -rp "Choose an option: " choice
 
         case "$choice" in
         0)
@@ -524,11 +524,11 @@ show_log() {
         2)
             sudo journalctl --rotate
             sudo journalctl --vacuum-time=1s
-            echo "所有日志已清除。"
+            echo "All Logs cleared."
             restart
             ;;
         *)
-            echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
             show_log
             ;;
         esac
@@ -536,10 +536,10 @@ show_log() {
 }
 
 bbr_menu() {
-    echo -e "${green}\t1.${plain} 启用 BBR"
-    echo -e "${green}\t2.${plain} 禁用 BBR"
-    echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "选择一个选项: " choice
+    echo -e "${green}\t1.${plain} Enable BBR"
+    echo -e "${green}\t2.${plain} Disable BBR"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
+    read -rp "Choose an option: " choice
     case "$choice" in
     0)
         show_menu
@@ -553,7 +553,7 @@ bbr_menu() {
         bbr_menu
         ;;
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         bbr_menu
         ;;
     esac
@@ -760,15 +760,15 @@ show_xray_status() {
 }
 
 firewall_menu() {
-    echo -e "${green}\t1.${plain} ${green}安装${plain} 防火墙"
-    echo -e "${green}\t2.${plain} 端口列表 [编号]"
-    echo -e "${green}\t3.${plain} ${green}开放${plain} 端口"
-    echo -e "${green}\t4.${plain} ${red}删除${plain} 列表中的端口"
-    echo -e "${green}\t5.${plain} ${green}启用${plain} 防火墙"
-    echo -e "${green}\t6.${plain} ${red}禁用${plain} 防火墙"
-    echo -e "${green}\t7.${plain} 防火墙状态"
-    echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "选择一个选项: " choice
+    echo -e "${green}\t1.${plain} ${green}Install${plain} Firewall"
+    echo -e "${green}\t2.${plain} Port List [numbered]"
+    echo -e "${green}\t3.${plain} ${green}Open${plain} Ports"
+    echo -e "${green}\t4.${plain} ${red}Delete${plain} Ports from List"
+    echo -e "${green}\t5.${plain} ${green}Enable${plain} Firewall"
+    echo -e "${green}\t6.${plain} ${red}Disable${plain} Firewall"
+    echo -e "${green}\t7.${plain} Firewall Status"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
+    read -rp "Choose an option: " choice
     case "$choice" in
     0)
         show_menu
@@ -802,7 +802,7 @@ firewall_menu() {
         firewall_menu
         ;;
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         firewall_menu
         ;;
     esac
@@ -975,9 +975,9 @@ update_geo() {
     echo -e "${green}\t1.${plain} Loyalsoldier (geoip.dat, geosite.dat)"
     echo -e "${green}\t2.${plain} chocolate4u (geoip_IR.dat, geosite_IR.dat)"
     echo -e "${green}\t3.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
-    echo -e "${green}\t4.${plain} 全部"
-    echo -e "${green}\t0.${plain} 返回主菜单"
-    read -rp "选择一个选项: " choice
+    echo -e "${green}\t4.${plain} All"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
+    read -rp "Choose an option: " choice
 
     cd ${xui_folder}/bin
 
@@ -1006,7 +1006,7 @@ update_geo() {
         restart
         ;;
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         update_geo
         ;;
     esac
@@ -1036,15 +1036,15 @@ install_acme() {
 }
 
 ssl_cert_issue_main() {
-    echo -e "${green}\t1.${plain} 获取 SSL"
-    echo -e "${green}\t2.${plain} 撤销"
-    echo -e "${green}\t3.${plain} 强制续订"
-    echo -e "${green}\t4.${plain} 显示现有域名"
-    echo -e "${green}\t5.${plain} 为面板设置证书路径"
-    echo -e "${green}\t6.${plain} 服务器 IP 的自动 SSL"
-    echo -e "${green}\t0.${plain} 返回主菜单"
+    echo -e "${green}\t1.${plain} Get SSL"
+    echo -e "${green}\t2.${plain} Revoke"
+    echo -e "${green}\t3.${plain} Force Renew"
+    echo -e "${green}\t4.${plain} Show Existing Domains"
+    echo -e "${green}\t5.${plain} Set Cert paths for the panel"
+    echo -e "${green}\t6.${plain} Auto SSL for Server IP"
+    echo -e "${green}\t0.${plain} Back to Main Menu"
 
-    read -rp "选择一个选项: " choice
+    read -rp "Choose an option: " choice
     case "$choice" in
     0)
         show_menu
@@ -1147,7 +1147,7 @@ ssl_cert_issue_main() {
         ;;
 
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         ssl_cert_issue_main
         ;;
     esac
@@ -1916,7 +1916,7 @@ remove_iplimit() {
         show_menu
         ;;
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         remove_iplimit
         ;;
     esac
@@ -2062,66 +2062,66 @@ SSH_port_forwarding() {
     local listen_choice=""
 
     if [[ -n "$existing_cert" && -n "$existing_key" ]]; then
-        echo -e "${green}面板已通过 SSL 保护。${plain}"
+        echo -e "${green}Panel is secure with SSL.${plain}"
         before_show_menu
     fi
     if [[ -z "$existing_cert" && -z "$existing_key" && (-z "$existing_listenIP" || "$existing_listenIP" == "0.0.0.0") ]]; then
-        echo -e "\n${red}警告：未找到证书和密钥！面板不安全。${plain}"
-        echo "请获取证书或设置 SSH 端口转发。"
+        echo -e "\n${red}Warning: No Cert and Key found! The panel is not secure.${plain}"
+        echo "Please obtain a certificate or set up SSH port forwarding."
     fi
 
     if [[ -n "$existing_listenIP" && "$existing_listenIP" != "0.0.0.0" && (-z "$existing_cert" && -z "$existing_key") ]]; then
-        echo -e "\n${green}当前 SSH 端口转发配置：${plain}"
-        echo -e "标准 SSH 命令："
+        echo -e "\n${green}Current SSH Port Forwarding Configuration:${plain}"
+        echo -e "Standard SSH command:"
         echo -e "${yellow}ssh -L 2222:${existing_listenIP}:${existing_port} root@${server_ip}${plain}"
-        echo -e "\n如果使用 SSH 密钥："
+        echo -e "\nIf using SSH key:"
         echo -e "${yellow}ssh -i <sshkeypath> -L 2222:${existing_listenIP}:${existing_port} root@${server_ip}${plain}"
-        echo -e "\n连接后，在以下位置访问面板："
+        echo -e "\nAfter connecting, access the panel at:"
         echo -e "${yellow}http://localhost:2222${existing_webBasePath}${plain}"
     fi
 
-    echo -e "\n选择一个选项："
-    echo -e "${green}1.${plain} 设置监听 IP"
-    echo -e "${green}2.${plain} 清除监听 IP"
-    echo -e "${green}0.${plain} 返回主菜单"
-    read -rp "选择一个选项: " num
+    echo -e "\nChoose an option:"
+    echo -e "${green}1.${plain} Set listen IP"
+    echo -e "${green}2.${plain} Clear listen IP"
+    echo -e "${green}0.${plain} Back to Main Menu"
+    read -rp "Choose an option: " num
 
     case "$num" in
     1)
         if [[ -z "$existing_listenIP" || "$existing_listenIP" == "0.0.0.0" ]]; then
-            echo -e "\n未配置监听 IP。选择一个选项："
-            echo -e "1. 使用默认 IP (127.0.0.1)"
-            echo -e "2. 设置自定义 IP"
-            read -rp "选择一个选项 (1 或 2): " listen_choice
+            echo -e "\nNo listenIP configured. Choose an option:"
+            echo -e "1. Use default IP (127.0.0.1)"
+            echo -e "2. Set a custom IP"
+            read -rp "Select an option (1 or 2): " listen_choice
 
             config_listenIP="127.0.0.1"
-            [[ "$listen_choice" == "2" ]] && read -rp "输入要监听的自定义 IP: " config_listenIP
+            [[ "$listen_choice" == "2" ]] && read -rp "Enter custom IP to listen on: " config_listenIP
 
             ${xui_folder}/x-ui setting -listenIP "${config_listenIP}" >/dev/null 2>&1
-            echo -e "${green}监听 IP 已设置为 ${config_listenIP}。${plain}"
-            echo -e "\n${green}SSH 端口转发配置：${plain}"
-            echo -e "标准 SSH 命令："
+            echo -e "${green}listen IP has been set to ${config_listenIP}.${plain}"
+            echo -e "\n${green}SSH Port Forwarding Configuration:${plain}"
+            echo -e "Standard SSH command:"
             echo -e "${yellow}ssh -L 2222:${config_listenIP}:${existing_port} root@${server_ip}${plain}"
-            echo -e "\n如果使用 SSH 密钥："
+            echo -e "\nIf using SSH key:"
             echo -e "${yellow}ssh -i <sshkeypath> -L 2222:${config_listenIP}:${existing_port} root@${server_ip}${plain}"
-            echo -e "\n连接后，在以下位置访问面板："
+            echo -e "\nAfter connecting, access the panel at:"
             echo -e "${yellow}http://localhost:2222${existing_webBasePath}${plain}"
             restart
         else
             config_listenIP="${existing_listenIP}"
-            echo -e "${green}当前监听 IP 已设置为 ${config_listenIP}。${plain}"
+            echo -e "${green}Current listen IP is already set to ${config_listenIP}.${plain}"
         fi
         ;;
     2)
         ${xui_folder}/x-ui setting -listenIP 0.0.0.0 >/dev/null 2>&1
-        echo -e "${green}监听 IP 已清除。${plain}"
+        echo -e "${green}Listen IP has been cleared.${plain}"
         restart
         ;;
     0)
         show_menu
         ;;
     *)
-        echo -e "${red}无效选项。请选择有效的数字。${plain}\n"
+        echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
         SSH_port_forwarding
         ;;
     esac
@@ -2129,66 +2129,66 @@ SSH_port_forwarding() {
 
 show_usage() {
     echo -e "┌────────────────────────────────────────────────────────────────┐
-│  ${blue}x-ui 控制菜单用法 (子命令):${plain}                                   │
+│  ${blue}x-ui control menu usages (subcommands):${plain}                       │
 │                                                                │
-│  ${blue}x-ui${plain}                       - 管理脚本                          │
-│  ${blue}x-ui start${plain}                 - 启动                              │
-│  ${blue}x-ui stop${plain}                  - 停止                              │
-│  ${blue}x-ui restart${plain}               - 重启                              │
-│  ${blue}x-ui status${plain}                - 当前状态                          │
-│  ${blue}x-ui settings${plain}              - 当前设置                          │
-│  ${blue}x-ui enable${plain}                - 启用操作系统启动时自动启动       │
-│  ${blue}x-ui disable${plain}               - 禁用操作系统启动时自动启动       │
-│  ${blue}x-ui log${plain}                   - 检查日志                          │
-│  ${blue}x-ui banlog${plain}                - 检查 Fail2ban 封禁日志            │
-│  ${blue}x-ui update${plain}                - 更新                              │
-│  ${blue}x-ui update-all-geofiles${plain}   - 更新所有地理文件                  │
-│  ${blue}x-ui legacy${plain}                - 旧版本                            │
-│  ${blue}x-ui install${plain}               - 安装                              │
-│  ${blue}x-ui uninstall${plain}             - 卸载                              │
+│  ${blue}x-ui${plain}                       - Admin Management Script          │
+│  ${blue}x-ui start${plain}                 - Start                            │
+│  ${blue}x-ui stop${plain}                  - Stop                             │
+│  ${blue}x-ui restart${plain}               - Restart                          │
+│  ${blue}x-ui status${plain}                - Current Status                   │
+│  ${blue}x-ui settings${plain}              - Current Settings                 │
+│  ${blue}x-ui enable${plain}                - Enable Autostart on OS Startup   │
+│  ${blue}x-ui disable${plain}               - Disable Autostart on OS Startup  │
+│  ${blue}x-ui log${plain}                   - Check logs                       │
+│  ${blue}x-ui banlog${plain}                - Check Fail2ban ban logs          │
+│  ${blue}x-ui update${plain}                - Update                           │
+│  ${blue}x-ui update-all-geofiles${plain}   - Update all geo files             │
+│  ${blue}x-ui legacy${plain}                - Legacy version                   │
+│  ${blue}x-ui install${plain}               - Install                          │
+│  ${blue}x-ui uninstall${plain}             - Uninstall                        │
 └────────────────────────────────────────────────────────────────┘"
 }
 
 show_menu() {
     echo -e "
 ╔────────────────────────────────────────────────╗
-│   ${green}3X-UI 面板管理脚本${plain}                           │
-│   ${green}0.${plain} 退出脚本                                   │
+│   ${green}3X-UI Panel Management Script${plain}                │
+│   ${green}0.${plain} Exit Script                               │
 │────────────────────────────────────────────────│
-│   ${green}1.${plain} 安装                                       │
-│   ${green}2.${plain} 更新                                       │
-│   ${green}3.${plain} 更新菜单                                   │
-│   ${green}4.${plain} 旧版本                                     │
-│   ${green}5.${plain} 卸载                                       │
+│   ${green}1.${plain} Install                                   │
+│   ${green}2.${plain} Update                                    │
+│   ${green}3.${plain} Update Menu                               │
+│   ${green}4.${plain} Legacy Version                            │
+│   ${green}5.${plain} Uninstall                                 │
 │────────────────────────────────────────────────│
-│   ${green}6.${plain} 重置用户名和密码                           │
-│   ${green}7.${plain} 重置 Web 基础路径                         │
-│   ${green}8.${plain} 重置设置                                   │
-│   ${green}9.${plain} 更改端口                                   │
-│  ${green}10.${plain} 查看当前设置                               │
+│   ${green}6.${plain} Reset Username & Password                 │
+│   ${green}7.${plain} Reset Web Base Path                       │
+│   ${green}8.${plain} Reset Settings                            │
+│   ${green}9.${plain} Change Port                               │
+│  ${green}10.${plain} View Current Settings                     │
 │────────────────────────────────────────────────│
-│  ${green}11.${plain} 启动                                       │
-│  ${green}12.${plain} 停止                                       │
-│  ${green}13.${plain} 重启                                       │
-│  ${green}14.${plain} 检查状态                                   │
-│  ${green}15.${plain} 日志管理                                   │
+│  ${green}11.${plain} Start                                     │
+│  ${green}12.${plain} Stop                                      │
+│  ${green}13.${plain} Restart                                   │
+│  ${green}14.${plain} Check Status                              │
+│  ${green}15.${plain} Logs Management                           │
 │────────────────────────────────────────────────│
-│  ${green}16.${plain} 启用自动启动                               │
-│  ${green}17.${plain} 禁用自动启动                               │
+│  ${green}16.${plain} Enable Autostart                          │
+│  ${green}17.${plain} Disable Autostart                         │
 │────────────────────────────────────────────────│
-│  ${green}18.${plain} SSL 证书管理                               │
-│  ${green}19.${plain} Cloudflare SSL 证书                       │
-│  ${green}20.${plain} IP 限制管理                               │
-│  ${green}21.${plain} 防火墙管理                                 │
-│  ${green}22.${plain} SSH 端口转发管理                           │
+│  ${green}18.${plain} SSL Certificate Management                │
+│  ${green}19.${plain} Cloudflare SSL Certificate                │
+│  ${green}20.${plain} IP Limit Management                       │
+│  ${green}21.${plain} Firewall Management                       │
+│  ${green}22.${plain} SSH Port Forwarding Management            │
 │────────────────────────────────────────────────│
-│  ${green}23.${plain} 启用 BBR                                   │
-│  ${green}24.${plain} 更新地理文件                               │
-│  ${green}25.${plain} Ookla 速度测试                             │
+│  ${green}23.${plain} Enable BBR                                │
+│  ${green}24.${plain} Update Geo Files                          │
+│  ${green}25.${plain} Speedtest by Ookla                        │
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -rp "请输入您的选择 [0-25]: " num
+    echo && read -rp "Please enter your selection [0-25]: " num
 
     case "${num}" in
     0)
