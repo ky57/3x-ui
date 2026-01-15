@@ -19,6 +19,23 @@ function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
 
+# Port helpers: detect listener and owning process (best effort)
+is_port_in_use() {
+    local port="$1"
+    if command -v ss >/dev/null 2>&1; then
+        ss -ltn 2>/dev/null | awk -v p=":${port}$" '$4 ~ p {exit 0} END {exit 1}'
+        return
+    fi
+    if command -v netstat >/dev/null 2>&1; then
+        netstat -lnt 2>/dev/null | awk -v p=":${port} " '$4 ~ p {exit 0} END {exit 1}'
+        return
+    fi
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -nP -iTCP:${port} -sTCP:LISTEN >/dev/null 2>&1 && return 0
+    fi
+    return 1
+}
+
 # Simple helpers for domain/IP validation
 is_ipv4() {
     [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && return 0 || return 1
@@ -30,7 +47,7 @@ is_ip() {
     is_ipv4 "$1" || is_ipv6 "$1"
 }
 is_domain() {
-    [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+[A-Za-z]{2,}$ ]] && return 0 || return 1
+    [[ "$1" =~ ^([A-Za-z0-9](-*[A-Za-z0-9])*\.)+(xn--[a-z0-9]{2,}|[A-Za-z]{2,})$ ]] && return 0 || return 1
 }
 
 # check root
@@ -230,57 +247,6 @@ gen_random_string() {
     echo "$random_string"
 }
 
-# Generate and configure a self-signed SSL certificate
-setup_self_signed_certificate() {
-    local name="$1"   # domain or IP to place in SAN
-    local certDir="/root/cert/selfsigned"
-
-    LOGI "Generating a self-signed certificate (not publicly trusted)..."
-
-    mkdir -p "$certDir"
-
-    local sanExt=""
-    if [[ "$name" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ || "$name" =~ : ]]; then
-        sanExt="IP:${name}"
-    else
-        sanExt="DNS:${name}"
-    fi
-
-    openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-        -keyout "${certDir}/privkey.pem" \
-        -out "${certDir}/fullchain.pem" \
-        -subj "/CN=${name}" \
-        -addext "subjectAltName=${sanExt}" >/dev/null 2>&1
-
-    if [[ $? -ne 0 ]]; then
-        local tmpCfg="${certDir}/openssl.cnf"
-        cat > "$tmpCfg" <<EOF
-[req]
-distinguished_name=req_distinguished_name
-req_extensions=v3_req
-[req_distinguished_name]
-[v3_req]
-subjectAltName=${sanExt}
-EOF
-        openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-            -keyout "${certDir}/privkey.pem" \
-            -out "${certDir}/fullchain.pem" \
-            -subj "/CN=${name}" \
-            -config "$tmpCfg" -extensions v3_req >/dev/null 2>&1
-        rm -f "$tmpCfg"
-    fi
-
-    if [[ ! -f "${certDir}/fullchain.pem" || ! -f "${certDir}/privkey.pem" ]]; then
-        LOGE "Failed to generate self-signed certificate"
-        return 1
-    fi
-
-    chmod 755 ${certDir}/* >/dev/null 2>&1
-    ${xui_folder}/x-ui cert -webCert "${certDir}/fullchain.pem" -webCertKey "${certDir}/privkey.pem" >/dev/null 2>&1
-    LOGI "Self-signed certificate configured. Browsers will show a warning."
-    return 0
-}
-
 reset_webbasepath() {
     echo -e "${yellow}Resetting Web Base Path${plain}"
 
@@ -340,16 +306,19 @@ check_config() {
         fi
     else
         echo -e "${red}⚠ WARNING: No SSL certificate configured!${plain}"
-        read -rp "Generate a self-signed SSL certificate now? [y/N]: " gen_self
-        if [[ "$gen_self" == "y" || "$gen_self" == "Y" ]]; then
+        echo -e "${yellow}You can get a Let's Encrypt certificate for your IP address (valid ~6 days, auto-renews).${plain}"
+        read -rp "Generate SSL certificate for IP now? [y/N]: " gen_ssl
+        if [[ "$gen_ssl" == "y" || "$gen_ssl" == "Y" ]]; then
             stop >/dev/null 2>&1
-            setup_self_signed_certificate "${server_ip}"
+            ssl_cert_issue_for_ip
             if [[ $? -eq 0 ]]; then
-                restart >/dev/null 2>&1
                 echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
+                # ssl_cert_issue_for_ip already restarts the panel, but ensure it's running
+                start >/dev/null 2>&1
             else
-                LOGE "Self-signed SSL setup failed."
+                LOGE "IP certificate setup failed."
                 echo -e "${yellow}You can try again via option 18 (SSL Certificate Management).${plain}"
+                start >/dev/null 2>&1
             fi
         else
             echo -e "${yellow}Access URL: http://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
@@ -586,36 +555,6 @@ enable_bbr() {
         echo -e "${green}BBR is already enabled!${plain}"
         before_show_menu
     fi
-
-    # Check the OS and install necessary packages
-    case "${release}" in
-    ubuntu | debian | armbian)
-        apt-get update && apt-get install -yqq --no-install-recommends ca-certificates
-        ;;
-    fedora | amzn | virtuozzo | rhel | almalinux | rocky | ol)
-        dnf -y update && dnf -y install ca-certificates
-        ;;
-    centos)
-            if [[ "${VERSION_ID}" =~ ^7 ]]; then
-                yum -y update && yum -y install ca-certificates
-            else
-                dnf -y update && dnf -y install ca-certificates
-            fi
-        ;;
-    arch | manjaro | parch)
-        pacman -Sy --noconfirm ca-certificates
-        ;;
-	opensuse-tumbleweed | opensuse-leap)
-        zypper refresh && zypper -q install -y ca-certificates
-        ;;
-    alpine)
-        apk add ca-certificates
-        ;;
-    *)
-        echo -e "${red}Unsupported operating system. Please check the script and install the necessary packages manually.${plain}\n"
-        exit 1
-        ;;
-    esac
 
     # Enable BBR
     echo "net.core.default_qdisc=fq" | tee -a /etc/sysctl.conf
@@ -951,24 +890,23 @@ delete_ports() {
 }
 
 update_all_geofiles() {
-        update_main_geofiles
-        update_ir_geofiles
-        update_ru_geofiles
+    update_geofiles "main"
+    update_geofiles "IR"
+    update_geofiles "RU"
 }
 
-update_main_geofiles() {
-        curl -fLRo geoip.dat       https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
-        curl -fLRo geosite.dat     https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-}
-
-update_ir_geofiles() {
-        curl -fLRo geoip_IR.dat    https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geoip.dat
-        curl -fLRo geosite_IR.dat  https://github.com/chocolate4u/Iran-v2ray-rules/releases/latest/download/geosite.dat
-}
-
-update_ru_geofiles() {
-        curl -fLRo geoip_RU.dat    https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat
-        curl -fLRo geosite_RU.dat  https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat
+update_geofiles() {
+    case "${1}" in
+      "main") dat_files=(geoip geosite); dat_source="Loyalsoldier/v2ray-rules-dat";;
+        "IR") dat_files=(geoip_IR geosite_IR); dat_source="chocolate4u/Iran-v2ray-rules" ;;
+        "RU") dat_files=(geoip_RU geosite_RU); dat_source="runetfreedom/russia-v2ray-rules-dat";;
+    esac
+    for dat in "${dat_files[@]}"; do
+        # Remove suffix for remote filename (e.g., geoip_IR -> geoip)
+        remote_file="${dat%%_*}"
+        curl -fLRo ${xui_folder}/bin/${dat}.dat -z ${xui_folder}/bin/${dat}.dat \
+            https://github.com/${dat_source}/releases/latest/download/${remote_file}.dat
+    done
 }
 
 update_geo() {
@@ -979,24 +917,22 @@ update_geo() {
     echo -e "${green}\t0.${plain} Back to Main Menu"
     read -rp "Choose an option: " choice
 
-    cd ${xui_folder}/bin
-
     case "$choice" in
     0)
         show_menu
         ;;
     1)
-        update_main_geofiles
+        update_geofiles "main"
         echo -e "${green}Loyalsoldier datasets have been updated successfully!${plain}"
         restart
         ;;
     2)
-        update_ir_geofiles
+        update_geofiles "IR"
         echo -e "${green}chocolate4u datasets have been updated successfully!${plain}"
         restart
         ;;
     3)
-        update_ru_geofiles
+        update_geofiles "RU"
         echo -e "${green}runetfreedom datasets have been updated successfully!${plain}"
         restart
         ;;
@@ -1036,12 +972,12 @@ install_acme() {
 }
 
 ssl_cert_issue_main() {
-    echo -e "${green}\t1.${plain} Get SSL"
+    echo -e "${green}\t1.${plain} Get SSL (Domain)"
     echo -e "${green}\t2.${plain} Revoke"
     echo -e "${green}\t3.${plain} Force Renew"
     echo -e "${green}\t4.${plain} Show Existing Domains"
     echo -e "${green}\t5.${plain} Set Cert paths for the panel"
-    echo -e "${green}\t6.${plain} Auto SSL for Server IP"
+    echo -e "${green}\t6.${plain} Get SSL for IP Address (6-day cert, auto-renews)"
     echo -e "${green}\t0.${plain} Back to Main Menu"
 
     read -rp "Choose an option: " choice
@@ -1136,9 +1072,10 @@ ssl_cert_issue_main() {
         ssl_cert_issue_main
         ;;
     6)
-        echo -e "${yellow}Automatic SSL Certificate for Server IP${plain}"
-        echo -e "This will automatically obtain and configure an SSL certificate for your server's IP address."
-        echo -e "${yellow}Note: Let's Encrypt supports IP certificates. Make sure port 80 is open.${plain}"
+        echo -e "${yellow}Let's Encrypt SSL Certificate for IP Address${plain}"
+        echo -e "This will obtain a certificate for your server's IP using the shortlived profile."
+        echo -e "${yellow}Certificate valid for ~6 days, auto-renews via acme.sh cron job.${plain}"
+        echo -e "${yellow}Port 80 must be open and accessible from the internet.${plain}"
         confirm "Do you want to proceed?" "y"
         if [[ $? == 0 ]]; then
             ssl_cert_issue_for_ip
@@ -1155,6 +1092,7 @@ ssl_cert_issue_main() {
 
 ssl_cert_issue_for_ip() {
     LOGI "Starting automatic SSL certificate generation for server IP..."
+    LOGI "Using Let's Encrypt shortlived profile (~6 days validity, auto-renews)"
     
     local existing_webBasePath=$(${xui_folder}/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
     local existing_port=$(${xui_folder}/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
@@ -1171,6 +1109,11 @@ ssl_cert_issue_for_ip() {
     fi
     
     LOGI "Server IP detected: ${server_ip}"
+    
+    # Ask for optional IPv6
+    local ipv6_addr=""
+    read -rp "Do you have an IPv6 address to include? (leave empty to skip): " ipv6_addr
+    ipv6_addr="${ipv6_addr// /}"  # Trim whitespace
     
     # check for acme.sh first
     if ! command -v ~/.acme.sh/acme.sh &>/dev/null; then
@@ -1211,66 +1154,114 @@ ssl_cert_issue_for_ip() {
         ;;
     esac
     
-    # check if certificate already exists for this IP
-    local currentCert=$(~/.acme.sh/acme.sh --list | tail -1 | awk '{print $1}')
-    if [ "${currentCert}" == "${server_ip}" ]; then
-        LOGI "Certificate already exists for IP: ${server_ip}"
-        certPath="/root/cert/${server_ip}"
-    else
-        # create directory for certificate
-        certPath="/root/cert/${server_ip}"
-        if [ ! -d "$certPath" ]; then
-            mkdir -p "$certPath"
-        else
-            rm -rf "$certPath"
-            mkdir -p "$certPath"
-        fi
-        
-        # Use port 80 for certificate issuance
-        local WebPort=80
-        LOGI "Using port ${WebPort} to issue certificate for IP: ${server_ip}"
-        LOGI "Make sure port ${WebPort} is open and not in use..."
-        
-        # issue the certificate for IP
-        ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-        ~/.acme.sh/acme.sh --issue -d ${server_ip} --listen-v6 --standalone --httpport ${WebPort} --force
-        if [ $? -ne 0 ]; then
-            LOGE "Failed to issue certificate for IP: ${server_ip}"
-            LOGE "Make sure port ${WebPort} is open and the server is accessible from the internet"
-            rm -rf ~/.acme.sh/${server_ip}
-            return 1
-        else
-            LOGI "Certificate issued successfully for IP: ${server_ip}"
-        fi
-        
-        # install the certificate
-        ~/.acme.sh/acme.sh --installcert -d ${server_ip} \
-            --key-file /root/cert/${server_ip}/privkey.pem \
-            --fullchain-file /root/cert/${server_ip}/fullchain.pem \
-            --reloadcmd "x-ui restart"
-        
-        if [ $? -ne 0 ]; then
-            LOGE "Failed to install certificate"
-            rm -rf ~/.acme.sh/${server_ip}
-            return 1
-        else
-            LOGI "Certificate installed successfully"
-        fi
-        
-        # enable auto-renew
-        ~/.acme.sh/acme.sh --upgrade --auto-upgrade >/dev/null 2>&1
-        chmod 755 $certPath/*
+    # Create certificate directory
+    certPath="/root/cert/ip"
+    mkdir -p "$certPath"
+    
+    # Build domain arguments
+    local domain_args="-d ${server_ip}"
+    if [[ -n "$ipv6_addr" ]] && is_ipv6 "$ipv6_addr"; then
+        domain_args="${domain_args} -d ${ipv6_addr}"
+        LOGI "Including IPv6 address: ${ipv6_addr}"
     fi
     
+    # Choose port for HTTP-01 listener (default 80, allow override)
+    local WebPort=""
+    read -rp "Port to use for ACME HTTP-01 listener (default 80): " WebPort
+    WebPort="${WebPort:-80}"
+    if ! [[ "${WebPort}" =~ ^[0-9]+$ ]] || ((WebPort < 1 || WebPort > 65535)); then
+        LOGE "Invalid port provided. Falling back to 80."
+        WebPort=80
+    fi
+    LOGI "Using port ${WebPort} to issue certificate for IP: ${server_ip}"
+    if [[ "${WebPort}" -ne 80 ]]; then
+        LOGI "Reminder: Let's Encrypt still reaches port 80; forward external port 80 to ${WebPort} for validation."
+    fi
+
+    while true; do
+        if is_port_in_use "${WebPort}"; then
+            LOGI "Port ${WebPort} is currently in use."
+
+            local alt_port=""
+            read -rp "Enter another port for acme.sh standalone listener (leave empty to abort): " alt_port
+            alt_port="${alt_port// /}"
+            if [[ -z "${alt_port}" ]]; then
+                LOGE "Port ${WebPort} is busy; cannot proceed with issuance."
+                return 1
+            fi
+            if ! [[ "${alt_port}" =~ ^[0-9]+$ ]] || ((alt_port < 1 || alt_port > 65535)); then
+                LOGE "Invalid port provided."
+                return 1
+            fi
+            WebPort="${alt_port}"
+            continue
+        else
+            LOGI "Port ${WebPort} is free and ready for standalone validation."
+            break
+        fi
+    done
+    
+    # Reload command - restarts panel after renewal
+    local reloadCmd="systemctl restart x-ui 2>/dev/null || rc-service x-ui restart 2>/dev/null"
+    
+    # issue the certificate for IP with shortlived profile
+    ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    ~/.acme.sh/acme.sh --issue \
+        ${domain_args} \
+        --standalone \
+        --server letsencrypt \
+        --certificate-profile shortlived \
+        --days 6 \
+        --httpport ${WebPort} \
+        --force
+    
+    if [ $? -ne 0 ]; then
+        LOGE "Failed to issue certificate for IP: ${server_ip}"
+        LOGE "Make sure port ${WebPort} is open and the server is accessible from the internet"
+        # Cleanup acme.sh data for both IPv4 and IPv6 if specified
+        rm -rf ~/.acme.sh/${server_ip} 2>/dev/null
+        [[ -n "$ipv6_addr" ]] && rm -rf ~/.acme.sh/${ipv6_addr} 2>/dev/null
+        rm -rf ${certPath} 2>/dev/null
+        return 1
+    else
+        LOGI "Certificate issued successfully for IP: ${server_ip}"
+    fi
+    
+    # Install the certificate
+    # Note: acme.sh may report "Reload error" and exit non-zero if reloadcmd fails,
+    # but the cert files are still installed. We check for files instead of exit code.
+    ~/.acme.sh/acme.sh --installcert -d ${server_ip} \
+        --key-file "${certPath}/privkey.pem" \
+        --fullchain-file "${certPath}/fullchain.pem" \
+        --reloadcmd "${reloadCmd}" 2>&1 || true
+    
+    # Verify certificate files exist (don't rely on exit code - reloadcmd failure causes non-zero)
+    if [[ ! -f "${certPath}/fullchain.pem" || ! -f "${certPath}/privkey.pem" ]]; then
+        LOGE "Certificate files not found after installation"
+        # Cleanup acme.sh data for both IPv4 and IPv6 if specified
+        rm -rf ~/.acme.sh/${server_ip} 2>/dev/null
+        [[ -n "$ipv6_addr" ]] && rm -rf ~/.acme.sh/${ipv6_addr} 2>/dev/null
+        rm -rf ${certPath} 2>/dev/null
+        return 1
+    fi
+    
+    LOGI "Certificate files installed successfully"
+    
+    # enable auto-renew
+    ~/.acme.sh/acme.sh --upgrade --auto-upgrade >/dev/null 2>&1
+    chmod 600 $certPath/privkey.pem 2>/dev/null
+    chmod 644 $certPath/fullchain.pem 2>/dev/null
+    
     # Set certificate paths for the panel
-    local webCertFile="/root/cert/${server_ip}/fullchain.pem"
-    local webKeyFile="/root/cert/${server_ip}/privkey.pem"
+    local webCertFile="${certPath}/fullchain.pem"
+    local webKeyFile="${certPath}/privkey.pem"
     
     if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
         ${xui_folder}/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
         LOGI "Certificate configured for panel"
         LOGI "  - Certificate File: $webCertFile"
         LOGI "  - Private Key File: $webKeyFile"
+        LOGI "  - Validity: ~6 days (auto-renews via acme.sh cron)"
         echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
         LOGI "Panel will restart to apply SSL certificate..."
         restart
@@ -1433,12 +1424,14 @@ ssl_cert_issue() {
     if [ $? -ne 0 ]; then
         LOGE "Auto renew failed, certificate details:"
         ls -lah cert/*
-        chmod 755 $certPath/*
+        chmod 600 $certPath/privkey.pem
+        chmod 644 $certPath/fullchain.pem
         exit 1
     else
         LOGI "Auto renew succeeded, certificate details:"
         ls -lah cert/*
-        chmod 755 $certPath/*
+        chmod 600 $certPath/privkey.pem
+        chmod 644 $certPath/fullchain.pem
     fi
 
     # Prompt user to set panel paths after successful certificate installation
@@ -1578,7 +1571,8 @@ ssl_cert_issue_CF() {
         else
             LOGI "The certificate is installed and auto-renewal is turned on. Specific information is as follows:"
             ls -lah ${certPath}/*
-            chmod 755 ${certPath}/*
+            chmod 600 ${certPath}/privkey.pem
+            chmod 644 ${certPath}/fullchain.pem
         fi
 
         # Prompt user to set panel paths after successful certificate installation
