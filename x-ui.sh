@@ -8,15 +8,15 @@ plain='\033[0m'
 
 #Add some basic function here
 function LOGD() {
-    echo -e "${yellow}[DEG] $* ${plain}"
+    echo -e "${yellow}[调试] $* ${plain}"
 }
 
 function LOGE() {
-    echo -e "${red}[ERR] $* ${plain}"
+    echo -e "${red}[错误] $* ${plain}"
 }
 
 function LOGI() {
-    echo -e "${green}[INF] $* ${plain}"
+    echo -e "${green}[信息] $* ${plain}"
 }
 
 # Port helpers: detect listener and owning process (best effort)
@@ -63,7 +63,7 @@ acme_listen_flag() {
 }
 
 # check root
-[[ $EUID -ne 0 ]] && LOGE "ERROR: You must be root to run this script! \n" && exit 1
+[[ $EUID -ne 0 ]] && LOGE "错误：必须使用 root 权限运行此脚本！ \n" && exit 1
 
 # Check OS and set release variable
 if [[ -f /etc/os-release ]]; then
@@ -73,10 +73,10 @@ elif [[ -f /usr/lib/os-release ]]; then
     source /usr/lib/os-release
     release=$ID
 else
-    echo "Failed to check the system OS, please contact the author!" >&2
+    echo "无法检测系统版本，请联系作者！" >&2
     exit 1
 fi
-echo "The OS release is: $release"
+echo "当前系统版本： $release"
 
 os_version=""
 os_version=$(grep "^VERSION_ID" /etc/os-release | cut -d '=' -f2 | tr -d '"' | tr -d '.')
@@ -100,7 +100,7 @@ iplimit_banned_log_path="${log_folder}/3xipl-banned.log"
 
 confirm() {
     if [[ $# -gt 1 ]]; then
-        echo && read -rp "$1 [Default $2]: " temp
+        echo && read -rp "$1 [默认 $2]: " temp
         if [[ "${temp}" == "" ]]; then
             temp=$2
         fi
@@ -115,7 +115,7 @@ confirm() {
 }
 
 confirm_restart() {
-    confirm "Restart the panel, Attention: Restarting the panel will also restart xray" "y"
+    confirm "重启面板？注意：重启面板也会重启 xray" "y"
     if [[ $? == 0 ]]; then
         restart
     else
@@ -124,7 +124,7 @@ confirm_restart() {
 }
 
 before_show_menu() {
-    echo && echo -n -e "${yellow}Press enter to return to the main menu: ${plain}" && read -r temp
+    echo && echo -n -e "${yellow}按回车返回主菜单： ${plain}" && read -r temp
     show_menu
 }
 
@@ -140,9 +140,9 @@ install() {
 }
 
 update() {
-    confirm "This function will update all x-ui components to the latest version, and the data will not be lost. Do you want to continue?" "y"
+    confirm "此操作将把所有 x-ui 组件更新到最新版本，数据不会丢失。是否继续？" "y"
     if [[ $? != 0 ]]; then
-        LOGE "Cancelled"
+        LOGE "已取消"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -150,15 +150,15 @@ update() {
     fi
     bash <(curl -Ls https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh)
     if [[ $? == 0 ]]; then
-        LOGI "Update is complete, Panel has automatically restarted "
+        LOGI "更新完成，面板已自动重启 "
         before_show_menu
     fi
 }
 
 update_dev() {
-    confirm "This will update x-ui to the latest DEV commit (the rolling 'dev-latest' build, not a stable release). Your data is preserved. Continue?" "y"
+    confirm "此操作会将 x-ui 更新到最新开发版提交（滚动的 dev-latest，非稳定版）。数据会保留。是否继续？" "y"
     if [[ $? != 0 ]]; then
-        LOGE "Cancelled"
+        LOGE "已取消"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -168,7 +168,7 @@ update_dev() {
     # instead of the latest stable tag.
     XUI_UPDATE_TAG="dev-latest" bash <(curl -Ls https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh)
     if [[ $? == 0 ]]; then
-        LOGI "Dev update is complete, Panel has automatically restarted "
+        LOGI "开发版更新完成，面板已自动重启 "
         before_show_menu
     fi
 }
@@ -213,19 +213,19 @@ replace_xui_script() {
 installed_script_url() {
     local ver
     ver=$("${xui_folder}/x-ui" -v 2> /dev/null | tr -d '[:space:]')
-    if [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && curl -fsIL -o /dev/null "https://raw.githubusercontent.com/MHSanaei/3x-ui/v${ver}/x-ui.sh"; then
-        echo "https://raw.githubusercontent.com/MHSanaei/3x-ui/v${ver}/x-ui.sh"
+    if [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && curl -fsIL -o /dev/null "https://raw.githubusercontent.com/ky57/3x-ui/main/x-ui-cn.sh"; then
+        echo "https://raw.githubusercontent.com/ky57/3x-ui/main/x-ui-cn.sh"
     else
-        echo -e "${yellow}No x-ui.sh published for the installed version (${ver:-unknown}), using main${plain}" >&2
-        echo "https://raw.githubusercontent.com/MHSanaei/3x-ui/main/x-ui.sh"
+        echo -e "${yellow}当前安装版本（${ver:-unknown}）未发布对应的 x-ui.sh，改用 main${plain}" >&2
+        echo "https://raw.githubusercontent.com/ky57/3x-ui/main/x-ui-cn.sh"
     fi
 }
 
 update_menu() {
-    echo -e "${yellow}Updating Menu${plain}"
-    confirm "This function will update the menu to the latest changes." "y"
+    echo -e "${yellow}正在更新菜单脚本${plain}"
+    confirm "此操作会将管理菜单更新到最新版本。" "y"
     if [[ $? != 0 ]]; then
-        LOGE "Cancelled"
+        LOGE "已取消"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -234,10 +234,10 @@ update_menu() {
 
     if replace_xui_script "$(installed_script_url)" "false"; then
         chmod +x ${xui_folder}/x-ui.sh
-        echo -e "${green}Update successful. The panel has automatically restarted.${plain}"
+        echo -e "${green}更新成功，面板已自动重启。${plain}"
         exit 0
     else
-        echo -e "${red}Failed to update the menu.${plain}"
+        echo -e "${red}菜单脚本更新失败。${plain}"
         return 1
     fi
 }
@@ -247,13 +247,13 @@ legacy_version() {
     read -r tag_version
 
     if [ -z "$tag_version" ]; then
-        echo "Panel version cannot be empty. Exiting."
+        echo "面板版本不能为空，已退出。"
         exit 1
     fi
     # Use the entered panel version in the download link
     install_command="bash <(curl -Ls "https://raw.githubusercontent.com/mhsanaei/3x-ui/v$tag_version/install.sh") v$tag_version"
 
-    echo "Downloading and installing panel version $tag_version..."
+    echo "正在下载并安装面板版本 $tag_version..."
     eval $install_command
 }
 
@@ -278,7 +278,7 @@ xui_env_file_path() {
 }
 
 uninstall() {
-    confirm "Are you sure you want to uninstall the panel? xray will also uninstalled!" "n"
+    confirm "确定要卸载面板吗？xray 也会被卸载！" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -320,9 +320,9 @@ uninstall() {
     fi
 
     echo ""
-    echo -e "Uninstalled Successfully.\n"
-    echo "If you need to install this panel again, you can use below command:"
-    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)${plain}"
+    echo -e "卸载成功。\n"
+    echo "如需重新安装面板，可使用以下命令："
+    echo -e "${green}bash <(curl -Ls https://raw.githubusercontent.com/ky57/3x-ui/master/install.sh)${plain}"
     echo ""
     # Trap the SIGTERM signal
     trap delete_script SIGTERM
@@ -330,7 +330,7 @@ uninstall() {
 }
 
 reset_user() {
-    confirm "Are you sure to reset the username and password of the panel?" "n"
+    confirm "确定要重置面板用户名和密码吗？" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -338,22 +338,22 @@ reset_user() {
         return 0
     fi
 
-    read -rp "Please set the login username [default is a random username]: " config_account
+    read -rp "请设置登录用户名 [默认随机]: " config_account
     [[ -z $config_account ]] && config_account=$(gen_random_string 10)
-    read -rp "Please set the login password [default is a random password]: " config_password
+    read -rp "请设置登录密码 [默认随机]: " config_password
     [[ -z $config_password ]] && config_password=$(gen_random_string 18)
 
-    read -rp "Do you want to disable currently configured two-factor authentication? (y/n): " twoFactorConfirm
+    read -rp "是否禁用当前已配置的两步验证？(y/n): " twoFactorConfirm
     if [[ $twoFactorConfirm != "y" && $twoFactorConfirm != "Y" ]]; then
         ${xui_folder}/x-ui setting -username "${config_account}" -password "${config_password}" > /dev/null 2>&1
     else
         ${xui_folder}/x-ui setting -username "${config_account}" -password "${config_password}" -resetTwoFactor=true > /dev/null 2>&1
-        echo -e "Two factor authentication has been disabled."
+        echo -e "两步验证已禁用。"
     fi
 
-    echo -e "Panel login username has been reset to: ${green} ${config_account} ${plain}"
-    echo -e "Panel login password has been reset to: ${green} ${config_password} ${plain}"
-    echo -e "${green} Please use the new login username and password to access the X-UI panel. Also remember them! ${plain}"
+    echo -e "面板登录用户名已重置为： ${green} ${config_account} ${plain}"
+    echo -e "面板登录密码已重置为： ${green} ${config_password} ${plain}"
+    echo -e "${green} 请使用新的用户名和密码登录面板，并妥善保存！ ${plain}"
     confirm_restart
 }
 
@@ -365,11 +365,11 @@ gen_random_string() {
 }
 
 reset_webbasepath() {
-    echo -e "${yellow}Resetting Web Base Path${plain}"
+    echo -e "${yellow}正在重置面板路径（Web Base Path）${plain}"
 
-    read -rp "Are you sure you want to reset the web base path? (y/n): " confirm
+    read -rp "确定要重置面板路径吗？(y/n): " confirm
     if [[ $confirm != "y" && $confirm != "Y" ]]; then
-        echo -e "${yellow}Operation canceled.${plain}"
+        echo -e "${yellow}操作已取消。${plain}"
         return
     fi
 
@@ -378,13 +378,13 @@ reset_webbasepath() {
     # Apply the new web base path setting
     ${xui_folder}/x-ui setting -webBasePath "${config_webBasePath}" > /dev/null 2>&1
 
-    echo -e "Web base path has been reset to: ${green}${config_webBasePath}${plain}"
-    echo -e "${green}Please use the new web base path to access the panel.${plain}"
+    echo -e "面板路径已重置为： ${green}${config_webBasePath}${plain}"
+    echo -e "${green}请使用新的面板路径访问面板。${plain}"
     restart
 }
 
 reset_config() {
-    confirm "Are you sure you want to reset all panel settings, Account data will not be lost, Username and password will not change" "n"
+    confirm "确定要重置所有面板设置吗？账号数据不会丢失，用户名和密码不变" "n"
     if [[ $? != 0 ]]; then
         if [[ $# == 0 ]]; then
             show_menu
@@ -392,14 +392,14 @@ reset_config() {
         return 0
     fi
     ${xui_folder}/x-ui setting -reset
-    echo -e "All panel settings have been reset to default."
+    echo -e "所有面板设置已重置为默认值。"
     restart
 }
 
 check_config() {
     local info=$(${xui_folder}/x-ui setting -show true)
     if [[ $? != 0 ]]; then
-        LOGE "get current settings error, please check logs"
+        LOGE "获取当前设置失败，请检查日志"
         show_menu
         return
     fi
@@ -412,9 +412,9 @@ check_config() {
         dsn="$(grep -E '^XUI_DB_DSN=' "$db_env_file" | head -1 | cut -d= -f2-)"
         local dsn_safe
         dsn_safe="$(echo "$dsn" | sed -E 's|(://[^:/@]+:)[^@]+@|\1****@|')"
-        echo -e "${green}Database: PostgreSQL — ${dsn_safe}${plain}"
+        echo -e "${green}数据库：PostgreSQL — ${dsn_safe}${plain}"
     else
-        echo -e "${green}Database: SQLite (/etc/x-ui/x-ui.db)${plain}"
+        echo -e "${green}数据库：SQLite (/etc/x-ui/x-ui.db)${plain}"
     fi
 
     local existing_webBasePath=$(echo "$info" | grep -Eo 'webBasePath: .+' | awk '{print $2}')
@@ -442,10 +442,10 @@ check_config() {
     if [[ -z "$server_ip" ]]; then
         echo -e "${yellow}Could not auto-detect server IP from any provider.${plain}"
         while [[ -z "$server_ip" ]]; do
-            read -rp "Please enter your server's public IPv4 address: " server_ip
+            read -rp "请输入服务器公网 IPv4 地址: " server_ip
             server_ip="${server_ip// /}"
             if [[ ! "$server_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                echo -e "${red}Invalid IPv4 address. Please try again.${plain}"
+                echo -e "${red}无效的 IPv4 地址，请重试。${plain}"
                 server_ip=""
             fi
         done
@@ -466,45 +466,45 @@ check_config() {
         fi
 
         if [[ "$domain" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-            echo -e "${green}Access URL: https://${domain}:${existing_port}${existing_webBasePath}${plain}"
+            echo -e "${green}访问地址： https://${domain}:${existing_port}${existing_webBasePath}${plain}"
         else
-            echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
+            echo -e "${green}访问地址： https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
         fi
         if [[ -n "$cert_sans" && $(echo "$cert_sans" | wc -l) -gt 1 ]]; then
             echo -e "${yellow}The certificate also covers:${plain} $(echo "$cert_sans" | grep -vx "$domain" | tr '\n' ' ')"
         fi
     else
-        echo -e "${red}⚠ WARNING: No SSL certificate configured!${plain}"
+        echo -e "${red}⚠ 警告：尚未配置 SSL 证书！${plain}"
         echo -e "${yellow}You can get a Let's Encrypt certificate for your IP address (valid ~6 days, auto-renews).${plain}"
-        read -rp "Generate SSL certificate for IP now? [y/N]: " gen_ssl
+        read -rp "现在为 IP 生成 SSL 证书吗？[y/N]: " gen_ssl
         if [[ "$gen_ssl" == "y" || "$gen_ssl" == "Y" ]]; then
             stop 0 > /dev/null 2>&1
             ssl_cert_issue_for_ip
             if [[ $? -eq 0 ]]; then
-                echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
+                echo -e "${green}访问地址： https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
                 # ssl_cert_issue_for_ip already restarts the panel, but ensure it's running
                 start 0 > /dev/null 2>&1
             else
-                LOGE "IP certificate setup failed."
-                echo -e "${yellow}You can try again via main menu option 20 (SSL Certificate Management).${plain}"
+                LOGE "IP 证书配置失败。"
+                echo -e "${yellow}可通过主菜单选项 20（SSL 证书管理）重试。${plain}"
                 start 0 > /dev/null 2>&1
             fi
         else
-            echo -e "${yellow}Access URL: http://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
-            echo -e "${yellow}For security, please configure SSL certificate using main menu option 20 (SSL Certificate Management)${plain}"
+            echo -e "${yellow}访问地址： http://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
+            echo -e "${yellow}For security, please configure SSL certificate using main menu option 20 (SSL 证书管理)${plain}"
         fi
     fi
 }
 
 set_port() {
-    echo -n "Enter port number[1-65535]: "
+    echo -n "请输入端口号 [1-65535]: "
     read -r port
     if [[ -z "${port}" ]]; then
-        LOGD "Cancelled"
+        LOGD "已取消"
         before_show_menu
     else
         ${xui_folder}/x-ui setting -port ${port}
-        echo -e "The port is set, Please restart the panel now, and use the new port ${green}${port}${plain} to access web panel"
+        echo -e "端口已设置，请立即重启面板，并使用新端口 ${green}${port}${plain} 访问面板"
         confirm_restart
     fi
 }
@@ -513,11 +513,11 @@ start() {
     check_status
     if [[ $? == 0 ]]; then
         echo ""
-        LOGI "Panel is running, No need to start again, If you need to restart, please select restart"
+        LOGI "面板已在运行，无需重复启动；如需重启请选择重启"
     else
         if [[ "${running_in_docker}" == "true" ]]; then
-            LOGE "Panel process is not running inside this container."
-            LOGI "In Docker the panel is the container's main process. Restart the container to bring it back up:"
+            LOGE "容器内面板进程未运行。"
+            LOGI "Docker 中面板是容器主进程。请重启容器以恢复："
             LOGI "  docker restart <container_name>"
             if [[ $# == 0 ]]; then
                 before_show_menu
@@ -532,7 +532,7 @@ start() {
         sleep 2
         check_status
         if [[ $? == 0 ]]; then
-            LOGI "x-ui Started Successfully"
+            LOGI "x-ui 启动成功"
         else
             LOGE "panel Failed to start, Probably because it takes longer than two seconds to start, Please check the log information later"
         fi
@@ -547,7 +547,7 @@ stop() {
     check_status
     if [[ $? == 1 ]]; then
         echo ""
-        LOGI "Panel stopped, No need to stop again!"
+        LOGI "面板已停止，无需再次停止！"
     else
         if [[ "${running_in_docker}" == "true" ]]; then
             LOGI "In Docker the panel runs as the container's main process."
@@ -566,7 +566,7 @@ stop() {
         sleep 2
         check_status
         if [[ $? == 1 ]]; then
-            LOGI "x-ui and xray stopped successfully"
+            LOGI "x-ui 与 xray 已成功停止"
         else
             LOGE "Panel stop failed, Probably because the stop time exceeds two seconds, Please check the log information later"
         fi
@@ -582,14 +582,14 @@ restart() {
         if signal_xui HUP; then
             sleep 1
             signal_xui USR1
-            LOGI "Restart signal sent to the panel and xray-core."
+            LOGI "已向面板和 xray-core 发送重启信号。"
         else
             LOGE "Could not find the running panel process to signal."
         fi
         sleep 2
         check_status
         if [[ $? == 0 ]]; then
-            LOGI "x-ui and xray Restarted successfully"
+            LOGI "x-ui 与 xray 已成功重启"
         else
             LOGE "Panel restart failed, Please check the log information later"
         fi
@@ -606,7 +606,7 @@ restart() {
     sleep 2
     check_status
     if [[ $? == 0 ]]; then
-        LOGI "x-ui and xray Restarted successfully"
+        LOGI "x-ui 与 xray 已成功重启"
     else
         LOGE "Panel restart failed, Probably because it takes longer than two seconds to start, Please check the log information later"
     fi
@@ -675,9 +675,9 @@ enable() {
         systemctl enable x-ui
     fi
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Set to boot automatically on startup successfully"
+        LOGI "已成功设置 x-ui 开机自启"
     else
-        LOGE "x-ui Failed to set Autostart"
+        LOGE "x-ui 设置开机自启失败"
     fi
 
     if [[ $# == 0 ]]; then
@@ -700,9 +700,9 @@ disable() {
         systemctl disable x-ui
     fi
     if [[ $? == 0 ]]; then
-        LOGI "x-ui Autostart Cancelled successfully"
+        LOGI "x-ui Autostart 已取消 successfully"
     else
-        LOGE "x-ui Failed to cancel autostart"
+        LOGE "x-ui 取消开机自启失败"
     fi
 
     if [[ $# == 0 ]]; then
@@ -712,9 +712,9 @@ disable() {
 
 show_log() {
     if [[ $release == "alpine" ]]; then
-        echo -e "${green}\t1.${plain} Debug Log"
-        echo -e "${green}\t0.${plain} Back to Main Menu"
-        read -rp "Choose an option: " choice
+        echo -e "${green}\t1.${plain} 调试日志"
+        echo -e "${green}\t0.${plain} 返回主菜单"
+        read -rp "请选择选项: " choice
 
         case "$choice" in
             0)
@@ -727,15 +727,15 @@ show_log() {
                 fi
                 ;;
             *)
-                echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+                echo -e "${red}无效选项. Please select a valid number.${plain}\n"
                 show_log
                 ;;
         esac
     else
-        echo -e "${green}\t1.${plain} Debug Log"
-        echo -e "${green}\t2.${plain} Clear All logs"
-        echo -e "${green}\t0.${plain} Back to Main Menu"
-        read -rp "Choose an option: " choice
+        echo -e "${green}\t1.${plain} 调试日志"
+        echo -e "${green}\t2.${plain} 清空所有日志"
+        echo -e "${green}\t0.${plain} 返回主菜单"
+        read -rp "请选择选项: " choice
 
         case "$choice" in
             0)
@@ -750,11 +750,11 @@ show_log() {
             2)
                 sudo journalctl --rotate
                 sudo journalctl --vacuum-time=1s
-                echo "All Logs cleared."
+                echo "全部 Logs cleared."
                 restart
                 ;;
             *)
-                echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+                echo -e "${red}无效选项. Please select a valid number.${plain}\n"
                 show_log
                 ;;
         esac
@@ -762,10 +762,10 @@ show_log() {
 }
 
 bbr_menu() {
-    echo -e "${green}\t1.${plain} Enable BBR"
-    echo -e "${green}\t2.${plain} Disable BBR"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
+    echo -e "${green}\t1.${plain} 启用 BBR"
+    echo -e "${green}\t2.${plain} 禁用 BBR"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " choice
     case "$choice" in
         0)
             show_menu
@@ -779,7 +779,7 @@ bbr_menu() {
             bbr_menu
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             bbr_menu
             ;;
     esac
@@ -822,7 +822,7 @@ enable_bbr() {
         before_show_menu
     fi
 
-    # Enable BBR
+    # 启用 BBR
     if [ -d "/etc/sysctl.d/" ]; then
         {
             echo "#$(sysctl -n net.core.default_qdisc):$(sysctl -n net.ipv4.tcp_congestion_control)"
@@ -860,7 +860,7 @@ update_shell() {
         before_show_menu
     else
         echo ""
-        LOGE "Failed to download script, Please check whether the machine can connect Github"
+        LOGE "脚本下载失败，请检查机器是否能连接 GitHub"
         before_show_menu
     fi
 }
@@ -934,7 +934,7 @@ check_uninstall() {
     check_status
     if [[ $? != 2 ]]; then
         echo ""
-        LOGE "Panel installed, Please do not reinstall"
+        LOGE "面板已安装，请勿重复安装"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -948,7 +948,7 @@ check_install() {
     check_status
     if [[ $? == 2 ]]; then
         echo ""
-        LOGE "Please install the panel first"
+        LOGE "请先安装面板"
         if [[ $# == 0 ]]; then
             before_show_menu
         fi
@@ -962,15 +962,15 @@ show_status() {
     check_status
     case $? in
         0)
-            echo -e "Panel state: ${green}Running${plain}"
+            echo -e "面板状态： ${green}运行中${plain}"
             show_enable_status
             ;;
         1)
-            echo -e "Panel state: ${yellow}Not Running${plain}"
+            echo -e "面板状态： ${yellow}Not Running${plain}"
             show_enable_status
             ;;
         2)
-            echo -e "Panel state: ${red}Not Installed${plain}"
+            echo -e "面板状态： ${red}未安装${plain}"
             ;;
     esac
     show_xray_status
@@ -1002,9 +1002,9 @@ check_xray_status() {
 show_xray_status() {
     check_xray_status
     if [[ $? == 0 ]]; then
-        echo -e "xray state: ${green}Running${plain}"
+        echo -e "xray state: ${green}运行中${plain}"
     else
-        echo -e "xray state: ${red}Not Running${plain}"
+        echo -e "xray state: ${red}未运行${plain}"
     fi
 }
 
@@ -1028,23 +1028,23 @@ show_mtproto_status() {
         id=$(echo "${name}" | sed -E 's/mtg-([0-9]+)\.toml/\1/')
         bind=$(grep -E '^[[:space:]]*bind-to' "$f" | head -1 | cut -d'"' -f2)
         if echo "${running}" | grep -qx "${name}"; then
-            echo -e "mtproto inbound ${id} (${bind}): ${green}Running${plain}"
+            echo -e "mtproto inbound ${id} (${bind}): ${green}运行中${plain}"
         else
-            echo -e "mtproto inbound ${id} (${bind}): ${red}Not Running${plain}"
+            echo -e "mtproto inbound ${id} (${bind}): ${red}未运行${plain}"
         fi
     done
 }
 
 firewall_menu() {
-    echo -e "${green}\t1.${plain} ${green}Install${plain} Firewall"
-    echo -e "${green}\t2.${plain} Port List [numbered]"
-    echo -e "${green}\t3.${plain} ${green}Open${plain} Ports"
-    echo -e "${green}\t4.${plain} ${red}Delete${plain} Ports from List"
-    echo -e "${green}\t5.${plain} ${green}Enable${plain} Firewall"
-    echo -e "${green}\t6.${plain} ${red}Disable${plain} Firewall"
-    echo -e "${green}\t7.${plain} Firewall Status"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
+    echo -e "${green}\t1.${plain} ${green}安装${plain} 防火墙"
+    echo -e "${green}\t2.${plain} 端口列表 [带编号]"
+    echo -e "${green}\t3.${plain} ${green}开放${plain} 端口"
+    echo -e "${green}\t4.${plain} ${red}删除${plain} 端口"
+    echo -e "${green}\t5.${plain} ${green}启用${plain} 防火墙"
+    echo -e "${green}\t6.${plain} ${red}禁用${plain} 防火墙"
+    echo -e "${green}\t7.${plain} 防火墙状态"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " choice
     case "$choice" in
         0)
             show_menu
@@ -1078,7 +1078,7 @@ firewall_menu() {
             firewall_menu
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             firewall_menu
             ;;
     esac
@@ -1086,7 +1086,7 @@ firewall_menu() {
 
 install_firewall() {
     if ! command -v ufw &> /dev/null; then
-        echo "ufw firewall is not installed. Installing now..."
+        echo "未安装 ufw 防火墙，正在安装..."
         apt-get update
         apt-get install -y ufw
     else
@@ -1112,7 +1112,7 @@ install_firewall() {
 
 open_ports() {
     # Prompt the user to enter the ports they want to open
-    read -rp "Enter the ports you want to open (e.g. 80,443,2053 or range 400-500): " ports
+    read -rp "请输入要开放的端口（例如 80,443,2053 或范围 400-500）: " ports
 
     # Check if the input is valid
     if ! [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
@@ -1160,11 +1160,11 @@ delete_ports() {
     echo "Do you want to delete rules by:"
     echo "1) Rule numbers"
     echo "2) Ports"
-    read -rp "Enter your choice (1 or 2): " choice
+    read -rp "请输入选项（1 或 2）: " choice
 
     if [[ $choice -eq 1 ]]; then
         # Deleting by rule numbers
-        read -rp "Enter the rule numbers you want to delete (1, 2, etc.): " rule_numbers
+        read -rp "请输入要删除的规则编号（1、2 等）: " rule_numbers
 
         # Validate the input
         if ! [[ $rule_numbers =~ ^([0-9]+)(,[0-9]+)*$ ]]; then
@@ -1183,7 +1183,7 @@ delete_ports() {
 
     elif [[ $choice -eq 2 ]]; then
         # Deleting by ports
-        read -rp "Enter the ports you want to delete (e.g. 80,443,2053 or range 400-500): " ports
+        read -rp "请输入要删除的端口（例如 80,443,2053 或范围 400-500）: " ports
 
         # Validate the input
         if ! [[ $ports =~ ^([0-9]+|[0-9]+-[0-9]+)(,([0-9]+|[0-9]+-[0-9]+))*$ ]]; then
@@ -1309,9 +1309,9 @@ update_geo() {
     echo -e "${green}\t1.${plain} Loyalsoldier (geoip.dat, geosite.dat)"
     echo -e "${green}\t2.${plain} chocolate4u (geoip_IR.dat, geosite_IR.dat)"
     echo -e "${green}\t3.${plain} runetfreedom (geoip_RU.dat, geosite_RU.dat)"
-    echo -e "${green}\t4.${plain} All"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
+    echo -e "${green}\t4.${plain} 全部"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " choice
 
     case "$choice" in
         0)
@@ -1330,7 +1330,7 @@ update_geo() {
             run_geo_update "geo files" update_all_geofiles
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             update_geo
             ;;
     esac
@@ -1345,30 +1345,30 @@ install_acme() {
         return 0
     fi
 
-    LOGI "Installing acme.sh..."
+    LOGI "正在安装 acme.sh..."
     cd ~ || return 1 # Ensure you can change to the home directory
 
     curl -s https://get.acme.sh | sh
     if [ $? -ne 0 ]; then
-        LOGE "Installation of acme.sh failed."
+        LOGE "acme.sh 安装失败。"
         return 1
     else
-        LOGI "Installation of acme.sh succeeded."
+        LOGI "acme.sh 安装成功。"
     fi
 
     return 0
 }
 
 ssl_cert_issue_main() {
-    echo -e "${green}\t1.${plain} Get SSL (Domain)"
-    echo -e "${green}\t2.${plain} Revoke & Remove"
-    echo -e "${green}\t3.${plain} Force Renew"
-    echo -e "${green}\t4.${plain} Show Existing Domains"
-    echo -e "${green}\t5.${plain} Set Cert paths for the panel"
-    echo -e "${green}\t6.${plain} Get SSL for IP Address (6-day cert, auto-renews)"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
+    echo -e "${green}\t1.${plain} 获取 SSL (Domain)"
+    echo -e "${green}\t2.${plain} 撤销并删除"
+    echo -e "${green}\t3.${plain} 强制更新"
+    echo -e "${green}\t4.${plain} 显示现有域名"
+    echo -e "${green}\t5.${plain} 为面板设置证书路径"
+    echo -e "${green}\t6.${plain} 获取 SSL for IP Address (6-day cert, auto-renews)"
+    echo -e "${green}\t0.${plain} 返回主菜单"
 
-    read -rp "Choose an option: " choice
+    read -rp "请选择选项: " choice
     case "$choice" in
         0)
             show_menu
@@ -1384,7 +1384,7 @@ ssl_cert_issue_main() {
             else
                 echo "Existing domains:"
                 echo "$domains"
-                read -rp "Please enter a domain from the list to revoke and remove the certificate: " domain
+                read -rp "请从列表输入要撤销并删除证书的域名: " domain
                 if echo "$domains" | grep -qw "$domain"; then
                     # The IP-cert flow (option 6) stores files under /root/cert/ip, but acme.sh
                     # tracks the cert under the actual IP address(es). Resolve those so renewal
@@ -1425,7 +1425,7 @@ ssl_cert_issue_main() {
             else
                 echo "Existing domains:"
                 echo "$domains"
-                read -rp "Please enter a domain from the list to renew the SSL certificate: " domain
+                read -rp "请从列表输入要续期 SSL 证书的域名: " domain
                 if echo "$domains" | grep -qw "$domain"; then
                     ~/.acme.sh/acme.sh --renew -d ${domain} --force
                     LOGI "Certificate forcefully renewed for domain: $domain"
@@ -1467,11 +1467,11 @@ ssl_cert_issue_main() {
             ssl_cert_issue_main
             ;;
         5)
-            echo -e "${green}\t1.${plain} Use a certificate from /root/cert"
-            echo -e "${green}\t2.${plain} Enter custom certificate file paths (e.g. certbot, /etc/letsencrypt/...)"
-            read -rp "Choose an option: " pathChoice
+            echo -e "${green}\t1.${plain} 使用 /root/cert 中的证书"
+            echo -e "${green}\t2.${plain} 输入自定义证书路径（例如 certbot、/etc/letsencrypt/...）"
+            read -rp "请选择选项: " pathChoice
             if [[ "$pathChoice" == "2" ]]; then
-                read -rp "Certificate file path (fullchain): " webCertFile
+                read -rp "证书文件路径（fullchain）: " webCertFile
                 read -rp "Private key file path: " webKeyFile
                 if [[ -f "${webCertFile}" && -f "${webKeyFile}" ]]; then
                     ${xui_folder}/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
@@ -1527,7 +1527,7 @@ ssl_cert_issue_main() {
             echo -e "This will obtain a certificate for your server's IP using the shortlived profile."
             echo -e "${yellow}Certificate valid for ~6 days, auto-renews via acme.sh cron job.${plain}"
             echo -e "${yellow}Port 80 must be open and accessible from the internet.${plain}"
-            confirm "Do you want to proceed?" "y"
+            confirm "是否继续？" "y"
             if [[ $? == 0 ]]; then
                 ssl_cert_issue_for_ip
             fi
@@ -1535,7 +1535,7 @@ ssl_cert_issue_main() {
             ;;
 
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             ssl_cert_issue_main
             ;;
     esac
@@ -1570,7 +1570,7 @@ ssl_cert_issue_for_ip() {
 
     if [[ -n "$server_ip" ]]; then
         LOGI "Server IP detected: ${server_ip}"
-        if ! confirm "Is ${server_ip} the correct incoming public IPv4 address for this server?" "y"; then
+        if ! confirm "${server_ip} 是此服务器正确的公网 IPv4 地址吗？" "y"; then
             server_ip=""
         fi
     else
@@ -1578,10 +1578,10 @@ ssl_cert_issue_for_ip() {
     fi
 
     while [[ -z "$server_ip" ]]; do
-        read -rp "Please enter your server's public IPv4 address: " server_ip
+        read -rp "请输入服务器公网 IPv4 地址: " server_ip
         server_ip="${server_ip// /}"
         if [[ ! "$server_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            LOGE "Invalid IPv4 address. Please try again."
+            LOGE "无效的 IPv4 地址，请重试。"
             server_ip=""
         fi
     done
@@ -1598,7 +1598,7 @@ ssl_cert_issue_for_ip() {
         LOGI "acme.sh not found, installing..."
         install_acme
         if [ $? -ne 0 ]; then
-            LOGE "Failed to install acme.sh"
+            LOGE "安装 acme.sh 失败"
             return 1
         fi
     fi
@@ -1742,7 +1742,7 @@ ssl_cert_issue_for_ip() {
             LOGI "  - Certificate File: $webCertFile"
             LOGI "  - Private Key File: $webKeyFile"
             LOGI "  - Validity: ~6 days (auto-renews via acme.sh cron)"
-            echo -e "${green}Access URL: https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
+            echo -e "${green}访问地址： https://${server_ip}:${existing_port}${existing_webBasePath}${plain}"
             LOGI "Panel will restart to apply SSL certificate..."
             restart
         else
@@ -1894,9 +1894,9 @@ ssl_cert_issue() {
     read -rp "Would you like to modify --reloadcmd for ACME? (y/n): " setReloadcmd
     if [[ "$setReloadcmd" == "y" || "$setReloadcmd" == "Y" ]]; then
         echo -e "\n${green}\t1.${plain} Preset: systemctl reload nginx ; x-ui restart"
-        echo -e "${green}\t2.${plain} Input your own command"
-        echo -e "${green}\t0.${plain} Keep default reloadcmd"
-        read -rp "Choose an option: " choice
+        echo -e "${green}\t2.${plain} 输入自定义命令"
+        echo -e "${green}\t0.${plain} 保留默认 reloadcmd"
+        read -rp "请选择选项: " choice
         case "$choice" in
             1)
                 LOGI "Reloadcmd is: systemctl reload nginx ; x-ui restart"
@@ -1908,7 +1908,7 @@ ssl_cert_issue() {
                 LOGI "Your reloadcmd is: ${reloadCmd}"
                 ;;
             *)
-                LOGI "Keep default reloadcmd"
+                LOGI "保留默认 reloadcmd"
                 ;;
         esac
     fi
@@ -1927,9 +1927,9 @@ ssl_cert_issue() {
     fi
 
     if [[ -f "/root/cert/${domain}/privkey.pem" && -f "/root/cert/${domain}/fullchain.pem" && (${installRc} -eq 0 || ${installWroteFiles} -eq 1) ]]; then
-        LOGI "Installing certificate succeeded, enabling auto renew..."
+        LOGI "证书安装成功，正在启用自动续期..."
     else
-        LOGE "Installing certificate failed, exiting."
+        LOGE "证书安装失败，退出。"
         if [[ ${cert_exists} -eq 0 ]]; then
             rm -rf ~/.acme.sh/${domain} ~/.acme.sh/${domain}_ecc
         fi
@@ -1962,7 +1962,7 @@ ssl_cert_issue() {
             LOGI "Panel paths set for domain: $domain"
             LOGI "  - Certificate File: $webCertFile"
             LOGI "  - Private Key File: $webKeyFile"
-            echo -e "${green}Access URL: https://${domain}:${existing_port}${existing_webBasePath}${plain}"
+            echo -e "${green}访问地址： https://${domain}:${existing_port}${existing_webBasePath}${plain}"
             restart
         else
             LOGE "Error: Certificate or private key file not found for domain: $domain."
@@ -1982,7 +1982,7 @@ ssl_cert_issue_CF() {
     LOGI "3. Once the certificate is issued, you will be prompted to set the certificate for the panel (optional)."
     LOGI "4. The script also supports automatic renewal of the SSL certificate after installation."
 
-    confirm "Do you confirm the information and wish to proceed? [y/n]" "y"
+    confirm "确认以上信息并继续吗？[y/n]" "y"
 
     if [ $? -eq 0 ]; then
         # Check for acme.sh first
@@ -1990,7 +1990,7 @@ ssl_cert_issue_CF() {
             echo "acme.sh could not be found. We will install it."
             install_acme
             if [ $? -ne 0 ]; then
-                LOGE "Install acme failed, please check logs."
+                LOGE "安装 acme 失败，请检查日志。"
                 exit 1
             fi
         fi
@@ -2037,7 +2037,7 @@ ssl_cert_issue_CF() {
             LOGE "Certificate issuance failed, script exiting..."
             exit 1
         else
-            LOGI "Certificate issued successfully, Installing..."
+            LOGI "证书申请成功，正在安装..."
         fi
 
         # Install the certificate
@@ -2059,9 +2059,9 @@ ssl_cert_issue_CF() {
         read -rp "Would you like to modify --reloadcmd for ACME? (y/n): " setReloadcmd
         if [[ "$setReloadcmd" == "y" || "$setReloadcmd" == "Y" ]]; then
             echo -e "\n${green}\t1.${plain} Preset: systemctl reload nginx ; x-ui restart"
-            echo -e "${green}\t2.${plain} Input your own command"
-            echo -e "${green}\t0.${plain} Keep default reloadcmd"
-            read -rp "Choose an option: " choice
+            echo -e "${green}\t2.${plain} 输入自定义命令"
+            echo -e "${green}\t0.${plain} 保留默认 reloadcmd"
+            read -rp "请选择选项: " choice
             case "$choice" in
                 1)
                     LOGI "Reloadcmd is: systemctl reload nginx ; x-ui restart"
@@ -2073,7 +2073,7 @@ ssl_cert_issue_CF() {
                     LOGI "Your reloadcmd is: ${reloadCmd}"
                     ;;
                 *)
-                    LOGI "Keep default reloadcmd"
+                    LOGI "保留默认 reloadcmd"
                     ;;
             esac
         fi
@@ -2111,7 +2111,7 @@ ssl_cert_issue_CF() {
                 LOGI "Panel paths set for domain: $CF_Domain"
                 LOGI "  - Certificate File: $webCertFile"
                 LOGI "  - Private Key File: $webKeyFile"
-                echo -e "${green}Access URL: https://${CF_Domain}:${existing_port}${existing_webBasePath}${plain}"
+                echo -e "${green}访问地址： https://${CF_Domain}:${existing_port}${existing_webBasePath}${plain}"
                 restart
             else
                 LOGE "Error: Certificate or private key file not found for domain: $CF_Domain."
@@ -2130,7 +2130,7 @@ run_speedtest() {
         # If not installed, determine installation method
         if command -v snap &> /dev/null; then
             # Use snap to install Speedtest
-            echo "Installing Speedtest using snap..."
+            echo "正在通过 snap 安装 Speedtest..."
             snap install speedtest
         else
             # Fallback to using package managers
@@ -2155,7 +2155,7 @@ run_speedtest() {
                 echo "Error: Package manager not found. You may need to install Speedtest manually."
                 return 1
             else
-                echo "Installing Speedtest using $pkg_manager..."
+                echo "正在安装 Speedtest，使用 $pkg_manager..."
                 curl -s $speedtest_install_script | bash
                 $pkg_manager install -y speedtest
             fi
@@ -2171,24 +2171,24 @@ ip_validation() {
 }
 
 iplimit_main() {
-    echo -e "\n${green}\t1.${plain} Install Fail2ban and configure IP Limit"
-    echo -e "${green}\t2.${plain} Change Ban Duration"
-    echo -e "${green}\t3.${plain} Unban Everyone"
-    echo -e "${green}\t4.${plain} Ban Logs"
-    echo -e "${green}\t5.${plain} Ban an IP Address"
-    echo -e "${green}\t6.${plain} Unban an IP Address"
-    echo -e "${green}\t7.${plain} Real-Time Logs"
-    echo -e "${green}\t8.${plain} Service Status"
-    echo -e "${green}\t9.${plain} Service Restart"
-    echo -e "${green}\t10.${plain} Uninstall Fail2ban and IP Limit"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
+    echo -e "\n${green}\t1.${plain} 安装 Fail2ban 并配置 IP 限制"
+    echo -e "${green}\t2.${plain} 修改封禁时长"
+    echo -e "${green}\t3.${plain} 解除所有封禁"
+    echo -e "${green}\t4.${plain} 封禁日志"
+    echo -e "${green}\t5.${plain} 封禁 IP 地址"
+    echo -e "${green}\t6.${plain} 解除 IP 封禁"
+    echo -e "${green}\t7.${plain} 实时日志"
+    echo -e "${green}\t8.${plain} 服务状态"
+    echo -e "${green}\t9.${plain} 重启服务"
+    echo -e "${green}\t10.${plain} 卸载 Fail2ban 与 IP 限制"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " choice
     case "$choice" in
         0)
             show_menu
             ;;
         1)
-            confirm "Proceed with installation of Fail2ban & IP Limit?" "y"
+            confirm "继续安装 Fail2ban 与 IP 限制吗？" "y"
             if [[ $? == 0 ]]; then
                 install_iplimit
             else
@@ -2210,14 +2210,14 @@ iplimit_main() {
             iplimit_main
             ;;
         3)
-            confirm "Proceed with Unbanning everyone from IP Limit jail?" "y"
+            confirm "确定解除 IP 限制中的全部封禁吗？" "y"
             if [[ $? == 0 ]]; then
                 fail2ban-client reload --restart --unban 3x-ipl
                 truncate -s 0 "${iplimit_banned_log_path}"
-                echo -e "${green}All users Unbanned successfully.${plain}"
+                echo -e "${green}全部 users Unbanned successfully.${plain}"
                 iplimit_main
             else
-                echo -e "${yellow}Cancelled.${plain}"
+                echo -e "${yellow}已取消.${plain}"
             fi
             iplimit_main
             ;;
@@ -2268,7 +2268,7 @@ iplimit_main() {
             iplimit_main
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             iplimit_main
             ;;
     esac
@@ -2284,7 +2284,7 @@ setup_fail2ban_iplimit() {
     fi
 
     if ! command -v fail2ban-client &> /dev/null; then
-        echo -e "${green}Fail2ban is not installed. Installing now...!${plain}\n"
+        echo -e "${green}未安装 Fail2ban，正在安装...!${plain}\n"
 
         # Install fail2ban together with nftables. Recent fail2ban packages
         # default to `banaction = nftables-multiport` in /etc/fail2ban/jail.conf,
@@ -2410,10 +2410,10 @@ install_iplimit() {
 }
 
 remove_iplimit() {
-    echo -e "${green}\t1.${plain} Only remove IP Limit configurations"
-    echo -e "${green}\t2.${plain} Uninstall Fail2ban and IP Limit"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " num
+    echo -e "${green}\t1.${plain} 仅移除 IP 限制配置"
+    echo -e "${green}\t2.${plain} 卸载 Fail2ban 与 IP 限制"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " num
     case "$num" in
         1)
             rm -f /etc/fail2ban/filter.d/3x-ipl.conf
@@ -2471,7 +2471,7 @@ remove_iplimit() {
             show_menu
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             remove_iplimit
             ;;
     esac
@@ -2633,10 +2633,10 @@ SSH_port_forwarding() {
     if [[ -z "$server_ip" ]]; then
         echo -e "${yellow}Could not auto-detect server IP from any provider.${plain}"
         while [[ -z "$server_ip" ]]; do
-            read -rp "Please enter your server's public IPv4 address: " server_ip
+            read -rp "请输入服务器公网 IPv4 地址: " server_ip
             server_ip="${server_ip// /}"
             if [[ ! "$server_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                echo -e "${red}Invalid IPv4 address. Please try again.${plain}"
+                echo -e "${red}无效的 IPv4 地址，请重试。${plain}"
                 server_ip=""
             fi
         done
@@ -2673,8 +2673,8 @@ SSH_port_forwarding() {
     echo -e "\nChoose an option:"
     echo -e "${green}1.${plain} Set listen IP"
     echo -e "${green}2.${plain} Clear listen IP"
-    echo -e "${green}0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " num
+    echo -e "${green}0.${plain} 返回主菜单"
+    read -rp "请选择选项: " num
 
     case "$num" in
         1)
@@ -2711,7 +2711,7 @@ SSH_port_forwarding() {
             show_menu
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             SSH_port_forwarding
             ;;
     esac
@@ -2834,7 +2834,7 @@ postgresql_log() {
 
 pg_require_installed() {
     if ! postgresql_installed; then
-        LOGE "PostgreSQL is not installed. Use option 1 (Install PostgreSQL) in this menu first."
+        LOGE "未安装 PostgreSQL。请先在此菜单选择选项 1（安装 PostgreSQL）。"
         return 1
     fi
 }
@@ -2848,7 +2848,7 @@ purge_postgresql() {
     echo -e "${yellow}This panel was using PostgreSQL.${plain}"
     echo -e "${red}WARNING:${plain} purging removes the PostgreSQL server and ${red}ALL${plain} of its databases on"
     echo -e "this machine, including any used by other applications. This cannot be undone."
-    confirm "Also purge PostgreSQL and delete all of its data?" "n"
+    confirm "同时清除 PostgreSQL 并删除其全部数据吗？" "n"
     if [[ $? != 0 ]]; then
         LOGI "Left PostgreSQL installed; its data was not removed."
         return 0
@@ -3234,7 +3234,7 @@ pg_write_env() {
 pg_install_server_action() {
     if postgresql_installed; then
         LOGI "PostgreSQL already appears to be installed on this system."
-        confirm "Run setup anyway (ensures the xui database/user exist)?" "n" || return 0
+        confirm "仍要运行设置（确保 xui 数据库/用户存在）吗？" "n" || return 0
     fi
     LOGI "Installing PostgreSQL server and creating a dedicated user/database..."
     local dsn
@@ -3261,19 +3261,19 @@ migrate_to_postgres() {
     echo -e "${yellow}This copies your current SQLite data into a PostgreSQL database,${plain}"
     echo -e "${yellow}then switches the panel to PostgreSQL and restarts it.${plain}"
     echo -e "${red}Any existing panel tables in the destination will be cleared and overwritten.${plain}"
-    confirm "Continue?" "n" || return 0
+    confirm "是否继续？" "n" || return 0
 
     local dsn="" pg_mode
     if [[ -n "$PG_LAST_DSN" ]]; then
         echo -e "A PostgreSQL database was created in this session:"
         echo -e "  ${green}${PG_LAST_DSN}${plain}"
-        confirm "Migrate into this database?" "y" && dsn="$PG_LAST_DSN"
+        confirm "迁移到此数据库吗？" "y" && dsn="$PG_LAST_DSN"
     fi
 
     if [[ -z "$dsn" ]]; then
         echo ""
-        echo -e "${green}\t1.${plain} Install PostgreSQL locally and create a dedicated user/db (recommended)"
-        echo -e "${green}\t2.${plain} Use an existing PostgreSQL server (enter DSN)"
+        echo -e "${green}\t1.${plain} 安装 PostgreSQL locally and create a dedicated user/db (recommended)"
+        echo -e "${green}\t2.${plain} 使用已有 PostgreSQL 服务器（输入 DSN）"
         read -rp "Choose [1]: " pg_mode
         pg_mode="${pg_mode:-1}"
         if [[ "$pg_mode" == "2" ]]; then
@@ -3318,18 +3318,18 @@ migrate_to_postgres() {
 }
 
 postgresql_menu() {
-    echo -e "${green}\t1.${plain} ${green}Install${plain} PostgreSQL (server + client + xui db)"
-    echo -e "${green}\t2.${plain} Migrate SQLite ${green}->${plain} PostgreSQL"
-    echo -e "${green}\t3.${plain} Status (clusters & port 5432)"
-    echo -e "${green}\t4.${plain} ${green}Start${plain} PostgreSQL"
-    echo -e "${green}\t5.${plain} ${red}Stop${plain} PostgreSQL"
-    echo -e "${green}\t6.${plain} Restart PostgreSQL"
-    echo -e "${green}\t7.${plain} ${green}Enable${plain} Autostart on boot"
-    echo -e "${green}\t8.${plain} View PostgreSQL Log"
-    echo -e "${green}\t9.${plain} Convert SQLite ${green}.db <-> .dump${plain}"
-    echo -e "${green}\t10.${plain} Install/Upgrade client tools (pg_dump/pg_restore)"
-    echo -e "${green}\t0.${plain} Back to Main Menu"
-    read -rp "Choose an option: " choice
+    echo -e "${green}\t1.${plain} ${green}安装${plain} PostgreSQL（服务端 + 客户端 + xui 数据库）"
+    echo -e "${green}\t2.${plain} 迁移 SQLite ${green}->${plain} PostgreSQL"
+    echo -e "${green}\t3.${plain} 状态（集群与端口 5432）"
+    echo -e "${green}\t4.${plain} ${green}启动${plain} PostgreSQL"
+    echo -e "${green}\t5.${plain} ${red}停止${plain} PostgreSQL"
+    echo -e "${green}\t6.${plain} 重启 PostgreSQL"
+    echo -e "${green}\t7.${plain} ${green}启用${plain} 开机自启"
+    echo -e "${green}\t8.${plain} 查看 PostgreSQL 日志"
+    echo -e "${green}\t9.${plain} 转换 SQLite ${green}.db <-> .dump${plain}"
+    echo -e "${green}\t10.${plain} 安装/升级客户端工具（pg_dump/pg_restore）"
+    echo -e "${green}\t0.${plain} 返回主菜单"
+    read -rp "请选择选项: " choice
     case "$choice" in
         0)
             show_menu
@@ -3376,7 +3376,7 @@ postgresql_menu() {
             postgresql_menu
             ;;
         *)
-            echo -e "${red}Invalid option. Please select a valid number.${plain}\n"
+            echo -e "${red}无效选项. Please select a valid number.${plain}\n"
             postgresql_menu
             ;;
     esac
@@ -3430,7 +3430,7 @@ migrate_db() {
     if [[ "$mode" == "dump" ]]; then
         [[ -z "$output" ]] && output="${input%.*}.dump"
         if [[ -f "$output" ]]; then
-            confirm "Output ${output} already exists and will be overwritten. Continue?" "n" || return 0
+            confirm "输出文件 ${output} 已存在并将被覆盖。是否继续？" "n" || return 0
         fi
         LOGI "Dumping SQLite database to SQL text:"
         echo -e "  ${green}${input}${plain} -> ${green}${output}${plain}"
@@ -3448,7 +3448,7 @@ migrate_db() {
             return 1
         fi
         if [[ -f "$output" ]]; then
-            confirm "Output ${output} already exists and will be overwritten. Continue?" "n" || return 0
+            confirm "输出文件 ${output} 已存在并将被覆盖。是否继续？" "n" || return 0
             rm -f "$output"
         fi
         LOGI "Rebuilding SQLite database from SQL text:"
@@ -3504,46 +3504,46 @@ show_usage() {
 show_menu() {
     echo -e "
 ╔────────────────────────────────────────────────╗
-│  ${green}3X-UI Panel Management Script${plain}                │
-│  ${green}0.${plain} Exit Script                               │
+│  ${green}3X-UI 面板管理脚本${plain}                            │
+│  ${green}0.${plain} 退出脚本                                  │
 │────────────────────────────────────────────────│
-│  ${green}1.${plain} Install                                   │
-│  ${green}2.${plain} Update                                    │
-│  ${green}3.${plain} Update to Dev Channel (latest commit)     │
-│  ${green}4.${plain} Update Menu                               │
-│  ${green}5.${plain} Legacy Version                            │
-│  ${green}6.${plain} Uninstall                                 │
+│  ${green}1.${plain} 安装面板                                  │
+│  ${green}2.${plain} 更新面板                                  │
+│  ${green}3.${plain} 更新到开发通道（最新提交）                │
+│  ${green}4.${plain} 更新管理脚本菜单                          │
+│  ${green}5.${plain} 安装指定旧版本                            │
+│  ${green}6.${plain} 卸载面板                                  │
 │────────────────────────────────────────────────│
-│  ${green}7.${plain} Reset Username & Password                 │
-│  ${green}8.${plain} Reset Web Base Path                       │
-│  ${green}9.${plain} Reset Settings                            │
-│  ${green}10.${plain} Change Port                              │
-│  ${green}11.${plain} View Current Settings                    │
+│  ${green}7.${plain} 重置登录用户名和密码                      │
+│  ${green}8.${plain} 重置面板路径（Web Base Path）             │
+│  ${green}9.${plain} 重置面板设置                              │
+│  ${green}10.${plain} 修改面板端口                             │
+│  ${green}11.${plain} 查看当前设置                             │
 │────────────────────────────────────────────────│
-│  ${green}12.${plain} Start                                    │
-│  ${green}13.${plain} Stop                                     │
-│  ${green}14.${plain} Restart                                  │
-|  ${green}15.${plain} Restart Xray                             │
-│  ${green}16.${plain} Check Status                             │
-│  ${green}17.${plain} Logs Management                          │
+│  ${green}12.${plain} 启动面板                                 │
+│  ${green}13.${plain} 停止面板                                 │
+│  ${green}14.${plain} 重启面板                                 │
+│  ${green}15.${plain} 重启 Xray                                │
+│  ${green}16.${plain} 查看运行状态                             │
+│  ${green}17.${plain} 日志管理                                 │
 │────────────────────────────────────────────────│
-│  ${green}18.${plain} Enable Autostart                         │
-│  ${green}19.${plain} Disable Autostart                        │
+│  ${green}18.${plain} 设置开机自启                             │
+│  ${green}19.${plain} 取消开机自启                             │
 │────────────────────────────────────────────────│
-│  ${green}20.${plain} SSL Certificate Management               │
-│  ${green}21.${plain} Cloudflare SSL Certificate               │
-│  ${green}22.${plain} IP Limit Management                      │
-│  ${green}23.${plain} Firewall Management                      │
-│  ${green}24.${plain} SSH Port Forwarding Management           │
-│  ${green}25.${plain} PostgreSQL Management                    │
+│  ${green}20.${plain} SSL 证书管理                             │
+│  ${green}21.${plain} Cloudflare SSL 证书                      │
+│  ${green}22.${plain} IP 限制管理                              │
+│  ${green}23.${plain} 防火墙管理                               │
+│  ${green}24.${plain} SSH 端口转发管理                         │
+│  ${green}25.${plain} PostgreSQL 管理                          │
 │────────────────────────────────────────────────│
-│  ${green}26.${plain} Enable BBR                               │
-│  ${green}27.${plain} Update Geo Files                         │
-│  ${green}28.${plain} Speedtest by Ookla                       │
+│  ${green}26.${plain} 启用 BBR                                 │
+│  ${green}27.${plain} 更新 Geo 数据文件                        │
+│  ${green}28.${plain} Ookla 速度测试                           │
 ╚────────────────────────────────────────────────╝
 "
     show_status
-    echo && read -rp "Please enter your selection [0-28]: " num
+    echo && read -rp "请输入功能编号 [0-28]: " num
 
     case "${num}" in
         0)
@@ -3634,7 +3634,7 @@ show_menu() {
             run_speedtest
             ;;
         *)
-            LOGE "Please enter the correct number [0-28]"
+            LOGE "请输入正确的数字 [0-28]"
             ;;
     esac
 }
