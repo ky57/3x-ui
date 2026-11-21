@@ -112,10 +112,10 @@
   "menu": {
     "theme": "主题",
     "dashboard": "系统状态",
-    "inbounds": "入站",
+    "inbounds": "入站列表",
     "clients": "客户端",
     "groups": "分组",
-    "nodes": "节点",
+    "nodes": "节点管理",
     "settings": "面板设置",
     "xray": "Xray 配置",
     "routing": "路由",
